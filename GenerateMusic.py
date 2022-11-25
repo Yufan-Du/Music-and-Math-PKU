@@ -1,6 +1,5 @@
 from mido import Message, MidiFile, MidiTrack
 import DataProcess as DP
-import random
 name2num = {
     '0': 0,
     '#C3': 1,
@@ -74,21 +73,29 @@ name2num = {
 }
 num2name = {num: name for name, num in name2num.items()}
 
+dict_chord_play = {
+    "None":[0,"None","None"],
+    "Am": [13,"A4","Minor3"],
+    "Dm": [9,"D4","Minor3"],
+    "C": [8,"C4","Major3"],
+    "G": [12,"G4","Major3"],
+    "F": [11,"F4","Major3"]
+    }
 
 def get_chord(name):
     chord = {
         "None": [0],  # 单音
         "Octave": [0, 12],  # 八度
-        'Pentatonic': [0, 6],  # 五度
-        'Quartet': [0, 5],  # 四度
+        'Pentatonic': [0, 6, 12],  # 五度
+        'Quartet': [0, 5, 12],  # 四度
         "Major3": [0, 4, 7, 12],  # 大三和弦
         "Minor3": [0, 3, 7, 12],  # 小三和弦
         "Augmented3": [0, 4, 8, 12],  # 增三和弦
         "Diminished3": [0, 3, 6, 12],  # 减三和弦
 
-        "M7": [0, 4, 7, 11],  # 大七和弦
-        "Mm7": [0, 4, 7, 10],  # 属七和弦
-        "m7": [0, 3, 7, 10],  # 小七和弦
+        "M7": [0, 4, 7, 11, 12],  # 大七和弦
+        "Mm7": [0, 4, 7, 10, 12],  # 属七和弦
+        "m7": [0, 3, 7, 10, 12],  # 小七和弦
         "mM7": [0, 3, 7, 12]  # 大小七和弦
         # To be added......
     }
@@ -100,10 +107,10 @@ def play_note(note, length, track, bpm, chord_name='None', base_num=0, delay=0, 
     base_note = 60  # C4偏置值
     for i in get_chord(chord_name):
         note1 = note + i
-        print(num2name[note1])
+        # print(num2name[note1])
         if note != 0:
             track.append(Message('note_on', note=base_note + base_num*12 + note1,
-                         velocity=round(64*velocity-15+2*i), time=round(meta_time*delay), channel=channel))
+                         velocity=round(64*velocity-10+2*i), time=round(meta_time*delay), channel=channel))
     if note != 0:
         track.append(Message('note_off', note=base_note + base_num*12 + note1,
                              velocity=round(64*velocity), time=round(meta_time*length), channel=channel))
@@ -112,54 +119,99 @@ def play_note(note, length, track, bpm, chord_name='None', base_num=0, delay=0, 
             meta_time*length), note=0, channel=channel))
 
 
-def MusicGen(Pitch_List, Rythm_List, filename, chord_name='None', base_num=0, Tonality='C5', bpm=60, beat=4):
-    print(Rythm_List)
+def MusicGen(Pitch_List, Rythm_List, filename, Pitch_list_chord=[],Rhythm_list_chord=[],
+Pitch_List4=[], Rhythm_List4=[], Pitch_List3=[], Rhythm_List3=[], Pitch_List2=[], Rhythm_List2=[], 
+chord_name=['None'], base_num=[0], tensity=[100,80,80,80,80], bpm=60, beat=4):
+    # print(Rythm_List)
     mid = MidiFile()
     track = MidiTrack()
-    mid.tracks.append(track)
+    track2 = MidiTrack()
+    track3 = MidiTrack()
+    track4 = MidiTrack()
+    track5 = MidiTrack()
     length = len(Pitch_List)
+    length2 = len(Pitch_List2)
+    length3 = len(Pitch_List3)
+    length4 = len(Pitch_List4)
+    length5 = len(Pitch_list_chord)
+    """Track_chord"""
+    for i in range(length5):
+        play_note(name2num[DP.dict_id_pitch[dict_chord_play[Pitch_list_chord[i]][0]]], float(
+            Rhythm_list_chord[i]), track5, bpm, velocity=tensity[4]/100, chord_name=dict_chord_play[Pitch_list_chord[i]][2], base_num=base_num[4])
+
     total_length = float(0)
-    tensity = float(80)
-    for i in range(length):
-        print(DP.dict_id_pitch[Pitch_List[i]])
-        if i < tensity * 0.25:
-            tensity += 0.9
-        elif i < tensity * 0.5:
-            tensity -= 0.8
-        elif i < tensity * 0.77:
-            tensity += 1
-        else:
-            tensity -= 0.8
-
+    """Track4"""
+    for i in range(length4):
         index = 1
-        ini_grp = total_length//beat
+        """节拍强弱控制"""
         if total_length % beat == 2 and beat % 4 == 0:
-            index = 1.08
+            index = 1.11
         elif total_length % beat == (beat/2):
-            index = 1.12
+            index = 1.11
         elif total_length % beat == 0:
-            index = 1.23
+            index = 1.25
         else:
-            index = 0.75
-        new_grp = total_length//beat
-
+            index = 0.8
+        total_length += float(Rhythm_List4[i])
+        play_note(name2num[DP.dict_id_pitch[Pitch_List4[i]]], float(
+            Rhythm_List4[i]), track4, bpm, velocity=tensity[3]*index/100, chord_name=chord_name[3], base_num=base_num[3])
+    """Track3"""
+    total_length = float(0)
+    for i in range(length3):
+        index = 1
+        """节拍强弱控制"""
+        if total_length % beat == 2 and beat % 4 == 0:
+            index = 1.11
+        elif total_length % beat == (beat/2):
+            index = 1.11
+        elif total_length % beat == 0:
+            index = 1.25
+        else:
+            index = 0.8
+        total_length += float(Rhythm_List3[i])
+        play_note(name2num[DP.dict_id_pitch[Pitch_List3[i]]], float(
+            Rhythm_List3[i]), track3, bpm, velocity=tensity[2]*index/100, chord_name=chord_name[2], base_num=base_num[2])
+    """Track2"""
+    total_length = float(0)
+    for i in range(length2):
+        index = 1
+        """节拍强弱控制"""
+        if total_length % beat == 2 and beat % 4 == 0:
+            index = 1.11
+        elif total_length % beat == (beat/2):
+            index = 1.11
+        elif total_length % beat == 0:
+            index = 1.25
+        else:
+            index = 0.8
+        total_length += float(Rhythm_List2[i])
+        play_note(name2num[DP.dict_id_pitch[Pitch_List2[i]]], float(
+            Rhythm_List2[i]), track2, bpm, velocity=tensity[1]*index/100, chord_name=chord_name[1], base_num=base_num[1])
+    """Track1"""
+    total_length = float(0)
+    tensity = float(tensity[0])
+    for i in range(length):
+        # print(DP.dict_id_pitch[Pitch_List[i]])
+        """节拍强弱控制"""
+        if total_length % beat == 2 and beat % 4 == 0:
+            index = 1.11
+        elif total_length % beat == (beat/2):
+            index = 1.11
+        elif total_length % beat == 0:
+            index = 1.25
+        else:
+            index = 0.8
         total_length += float(Rythm_List[i])
-        """跨小节的音与后方音高相同直接连上"""
-        if (i < length-1) and (int(new_grp) == int(ini_grp)+1) and (Pitch_List[i] == Pitch_List[i+1]):
-            total_length += float(Rythm_List[i+1])
-            play_note(name2num[DP.dict_id_pitch[Pitch_List[i]]], float(
-                Rythm_List[i])+float(Rythm_List[i+1]), track, bpm, chord_name=chord_name, base_num=base_num, velocity=tensity*index/100)
-            i += 1
-            """跨小节的音与后方不同，用主音先补成一小节,后方的音顺延"""
-        elif (i < length-1) and (int(new_grp) == int(ini_grp)+1) and (Pitch_List[i] != Pitch_List[i+1]) and (abs(name2num[DP.dict_id_pitch[Pitch_List[i]]]-name2num[Tonality]) < random.randint(0, 8)):
-            play_note(name2num[DP.dict_id_pitch[Pitch_List[i]]], float(
-                Rythm_List[i]), track, bpm, velocity=tensity*index/100, chord_name=chord_name, base_num=base_num)
-            play_note(name2num[Tonality], float(new_grp*beat) + beat -
-                      float(total_length), track, bpm, velocity=tensity*0.8/100, chord_name=chord_name, base_num=base_num)
-            """正常情况"""
-        else:
-            play_note(name2num[DP.dict_id_pitch[Pitch_List[i]]], float(
-                Rythm_List[i]), track, bpm, velocity=tensity*index/100, chord_name=chord_name, base_num=base_num)
-    play_note(name2num[Tonality], float(beat), track, bpm,
-              chord_name=chord_name, base_num=base_num)
+        play_note(name2num[DP.dict_id_pitch[Pitch_List[i]]], float(
+            Rythm_List[i]), track, bpm, velocity=tensity*index/100, chord_name=chord_name[0], base_num=base_num[0])
+
+    mid.tracks.append(track)
+    if length2:
+        mid.tracks.append(track2)
+    if length3:
+        mid.tracks.append(track3)
+    if length4:
+        mid.tracks.append(track4)
+    if length5:
+        mid.tracks.append(track5)
     mid.save(filename)
